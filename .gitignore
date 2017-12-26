@@ -1,0 +1,8 @@
+acme/acme.json
+.cloudflare-api.key
+portainer-data
+.idea
+.env
+traefik.toml
+devel_traefik.toml
+.htpasswd

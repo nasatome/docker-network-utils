@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:alpine
+    restart: always
+    networks:
+      - proxy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+      - ${PRJ_PWD}/devel_traefik.toml:/traefik.toml
+      - ${PRJ_PWD}/.htpasswd:/.htpasswd
+      - ./acme:/etc/acme
+    env_file:
+      - ${PRJ_PWD}/.cloudflare-api.key
+    labels:
+      - 'traefik.backend=traefik'
+      - 'traefik.port=8080'
+      - 'traefik.frontend.rule=Host:${FRONTEND_RULE_TRK}'
+      - 'traefik.enable=true'
+  portainer:
+      image: portainer/portainer
+      command: "--admin-password ${PORTAINER_ADMIN}"
+# portainer admin pass gen command: docker run --rm httpd:2.4-alpine htpasswd -nbB admin <password> | cut -d ":" -f 2
+      networks:
+        - proxy
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+#        - ./portainer-data:/data
+      labels:
+        - 'traefik.backend=portainer'
+        - 'traefik.port=9000'
+        - 'traefik.frontend.rule=Host:${FRONTEND_RULE_PTR}'
+        - 'traefik.enable=true'
+      restart: always
+
+
+networks:
+  proxy:
+    driver: bridge
+

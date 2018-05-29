@@ -1,0 +1,26 @@
+###########################################
+# Global configuration
+###########################################
+defaultEntryPoints = ["http"]
+logLevel = "INFO"
+MaxIdleConnsPerHost = 500
+###########################################
+# Entrypoints, http and https
+[entryPoints]
+# http should be redirected to https
+[entryPoints.http]
+address = ":80"
+###########################################
+# Wacth docker enpoinst
+[docker]
+endpoint = "unix:///var/run/docker.sock"
+domain = "docker.localhost"
+watch = true
+exposedbydefault = false
+###########################################
+# Enable Web Dashboard With Password
+[web]
+address = ":8080"
+readOnly = true
+[web.auth.basic]
+usersFile = "/.htpasswd"

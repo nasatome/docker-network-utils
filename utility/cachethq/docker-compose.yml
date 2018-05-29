@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:9.5
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: always
+    networks:
+      - cachethq-net
+  cachet:
+    image: cachethq/docker:2.3-latest
+#    ports:
+#      - 8002:8000
+    networks:
+      - proxy
+      - cachethq-net
+    environment:
+      - DB_DRIVER=${DB_DRIVER}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PREFIX=${DB_PREFIX}
+      - APP_KEY=${APP_KEY:-null}
+      - APP_LOG=${APP_LOG}
+      - DEBUG=${DEBUG}
+    depends_on:
+      - postgres
+    restart: always
+    labels:
+      - 'traefik.backend=cachet'
+      - 'traefik.port=8000'
+      - 'traefik.frontend.rule=Host:${FRONTEND_RULE}'
+      - 'traefik.enable=true'
+
+networks:
+  proxy:
+    external:
+      name: reverse_traefik
+  cachethq-net:
+    driver: bridge

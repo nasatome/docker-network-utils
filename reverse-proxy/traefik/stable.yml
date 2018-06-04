@@ -2,8 +2,9 @@ version: '3'
 
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:alpine
     restart: always
+    command: --acme.email='${ACME_EMAIL}'
     networks:
       - traefik
     ports:
@@ -12,16 +13,17 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/localtime:/etc/localtime:ro
-      - ./traefik.toml:/traefik.toml
+      - ${PRJ_PWD}/traefik.toml:/traefik.toml
       - ${PRJ_PWD}/.htpasswd:/.htpasswd
       - ./acme:/etc/acme
     env_file:
-      - ./.cloudflare-api.key
+      - ${PRJ_PWD}/.cloudflare-api.key
     labels:
       - 'traefik.backend=traefik'
       - 'traefik.port=8080'
       - 'traefik.frontend.rule=Host:${FRONTEND_RULE_TRK}'
       - 'traefik.enable=true'
+
 
 networks:
   traefik:

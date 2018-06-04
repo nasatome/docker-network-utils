@@ -20,7 +20,7 @@ address = ":443"
 # Enable ACME (Automatic SSL): Let's Encrypt
 # http://docs.traefik.io/configuration/acme/
 [acme]
-email = "CHANGE@EMAIL.COM"
+#email = "CHANGE@EMAIL.COM"
 storage = "/etc/acme/acme.json"
 entryPoint = "https"
 onDemand = false

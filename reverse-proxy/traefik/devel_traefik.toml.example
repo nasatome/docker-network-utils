@@ -26,7 +26,7 @@ entryPoint = "https"
 onDemand = false
 OnHostRule = true
 dnsProvider = "cloudflare"
-delayDontCheckDNS = 5
+delayDontCheckDNS = 59
 ###########################################
 # Wacth docker endpoints
 [docker]

@@ -21,6 +21,7 @@ Steps for Ubuntu Linux:
 2.- Check DNS KEY (cloudflare-api.key For Cloudflare Example)
 
 3.- Change Password in .htpasswd file
+`docker run --rm httpd:2.4-alpine htpasswd -nbB CHANGE_USER CHANGE_PASSWORD; history -d $(history | tail -1 | awk '{print $1}') ; printf "\n\n"`
 
 4.- Set variables in .env file
 

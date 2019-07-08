@@ -4,7 +4,6 @@ services:
   portainer:
       image: portainer/portainer
       command: "--admin-password ${PORTAINER_ADMIN}"
-# portainer admin pass gen command: docker run --rm httpd:2.4-alpine htpasswd -nbB admin <password> | cut -d ":" -f 2
       networks:
         - proxy
       ports:
@@ -23,5 +22,5 @@ services:
 networks:
   proxy:
     external:
-      name: reverse_traefik
+      name: ${PROXY_NAME}
 

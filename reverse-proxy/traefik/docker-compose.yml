@@ -2,9 +2,9 @@ version: '3'
 
 services:
   traefik:
-    image: traefik:alpine
+    image: traefik:1.7-alpine
     restart: always
-    command: --docker --acme.email='${ACME_EMAIL}'
+    command: --docker --acme.email='${ACME_EMAIL}' --logLevel='${TRAEFIK_LOG_LEVEL}' --acme.dnschallenge.provider='${TRAEFIK_DNS_PROVIDER}' --acme.dnschallenge.delaybeforecheck='${TRAEFIK_DNS_DELAY_BEFORE_CHECK}'
     networks:
       - traefik
     ports:
@@ -12,16 +12,15 @@ services:
       - "${TRAEFIK_HOST_HTTPS_PORT}:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/localtime:/etc/localtime:ro
       - ./${STAGE}_traefik.toml:/traefik.toml
       - ./.htpasswd:/.htpasswd
       - ./acme:/etc/acme
     env_file:
-      - ./.cloudflare-api.key
+      - ./.${TRAEFIK_DNS_PROVIDER}-api.key
     labels:
       - 'traefik.backend=traefik'
       - 'traefik.port=8080'
-      - 'traefik.frontend.rule=Host:${FRONTEND_RULE_TRK}'
+      - 'traefik.frontend.rule=Host:${TRAEFIK_FRONTEND_RULE}'
       - 'traefik.enable=true'
 
 

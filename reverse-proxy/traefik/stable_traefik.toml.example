@@ -2,7 +2,7 @@
 # Global Configuration
 ###########################################
 defaultEntryPoints = ["http", "https"]
-logLevel = "INFO"
+#logLevel = "INFO"
 MaxIdleConnsPerHost = 500
 ###########################################
 # Set Entrypoints
@@ -25,8 +25,14 @@ storage = "/etc/acme/acme.json"
 entryPoint = "https"
 onDemand = false
 OnHostRule = true
-dnsProvider = "cloudflare"
-delayDontCheckDNS = 59
+
+#[acme.httpChallenge]
+#entryPoint = "http"
+
+#[acme.dnsChallenge]
+#provider = "cloudflare"
+#delayBeforeCheck = 59
+
 ###########################################
 # Wacth docker endpoints
 [docker]

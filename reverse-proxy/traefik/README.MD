@@ -34,3 +34,10 @@ For Help:
 Providers
 `https://docs.traefik.io/v1.7/configuration/acme/#provider`
 
+Other providers example: 
+in .env 
+TRAEFIK_DNS_PROVIDER=digitalocean
+
+the file .digitalocean-api.key
+
+contains: DO_AUTH_TOKEN=<token_value>

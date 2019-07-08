@@ -3,7 +3,7 @@
 ###########################################
 defaultEntryPoints = ["http", "https"]
 #logLevel = "INFO"
-MaxIdleConnsPerHost = 500
+MaxIdleConnsPerHost = 5000
 ###########################################
 # Set Entrypoints
 [entryPoints]

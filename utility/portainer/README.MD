@@ -13,3 +13,6 @@ Generate Password and paste in .env (sometimes the $ symbol requires that it be 
 
 `docker-compose pull && docker-compose down -v && docker-compose up -d`
 
+(You must already have the balancer running.)
+
+

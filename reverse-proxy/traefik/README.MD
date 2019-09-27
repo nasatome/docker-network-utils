@@ -42,3 +42,8 @@ TRAEFIK_DNS_PROVIDER=digitalocean
 the file .digitalocean-api.key
 
 contains: DO_AUTH_TOKEN=<token_value>
+
+
+5.- Up the docker compose
+
+`docker-compose pull && docker-compose down -v && docker-compose up -d`

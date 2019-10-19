@@ -1,49 +1,64 @@
-Steps for Ubuntu Linux:
+### Steps for Linux:
 
-1.- Exec Commands
+1. Exec Commands
 
-`mkdir -p /opt/prj/`
+*Change the PROJECT_DIR variable to your address, where you normally store projects.*
 
-`cd /opt/prj/`
+`export PROJECT_DIR="/opt/prj";`
+
+`mkdir -p $PROJECT_DIR`
+
+`cd $PROJECT_DIR`
 
 `git clone git@github.com:nasatome/docker-network-utils.git`
 
-`cd docker-network-utils`
+```
+cd docker-network-utils && \
+cd reverse-traefik && \
+cd traefik
+```
 
-`cp .env.example .env`
+```
+cp .env.example .env && \
+cp .cloudflare-api.key.example .cloudflare-api.key` && \
+cp .htpasswd.example .htpasswd` && \
+cp stable_traefik.toml.example stable_traefik.toml`
+```
+2. Set variables in .env file
 
-`cp .cloudflare-api.key.example .cloudflare-api.key`
+3. Change Password in .htpasswd file; You can use this command:
 
-`cp .htpasswd.example .htpasswd`
-
-`cp stable_traefik.toml.example stable_traefik.toml`
-
-2.- Check DNS KEY (cloudflare-api.key For Cloudflare Example)
-
-3.- Change Password in .htpasswd file
 `docker run --rm httpd:2.4-alpine htpasswd -nbB CHANGE_USER CHANGE_PASSWORD; history -d $(history | tail -1 | awk '{print $1}') ; printf "\n\n"`
 
-4.- Set variables in .env file
+4. Check DNS KEY (cloudflare-api.key For Cloudflare Example)
 
 Notes: 
 
-For Help: 
-`docker run --rm traefik:1.7-alpine --help | less`
-
->ESC + : + q (for exit) 
+For Traefik Help: 
+`docker run --rm traefik:1.7-alpine --help | less` 
 
 Providers
 `https://docs.traefik.io/v1.7/configuration/acme/#provider`
 
-Other providers example: 
-in .env 
+#### Other providers example: 
+In the .env file change the TRAEFIK_DNS_PROVIDER variable: 
+For digital ocean
+
+``` 
 TRAEFIK_DNS_PROVIDER=digitalocean
+```
 
-the file .digitalocean-api.key
+Create a file with the same name of TRAEFIK_DNS_PROVIDER, example:
+`vi .TRAEFIK_DNS_PROVIDER-api.key`
 
-contains: DO_AUTH_TOKEN=<token_value>
+now the file name looks like this `.digitalocean-api.key`
 
+contains: 
 
-5.- Up the docker compose
+```
+DO_AUTH_TOKEN=<token_value>
+```
+
+5. Finally: Up the docker compose
 
 `docker-compose pull && docker-compose down -v && docker-compose up -d`

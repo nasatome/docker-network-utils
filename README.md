@@ -55,9 +55,9 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## Authors
 
-* **[nasatome](https://github.com/PurpleBooth)** - *Initial work* 
+* **[nasatome](https://github.com/nasatome)** - *Initial work* 
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/nasatome/docker-network-utils/contributors) who participated in this project.
 
 ## License
 

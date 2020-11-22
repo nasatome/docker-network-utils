@@ -14,7 +14,7 @@
 
 ```
 cd docker-network-utils && \
-cd reverse-traefik && \
+cd reverse-proxy && \
 cd traefik
 ```
 

@@ -20,9 +20,7 @@ cd traefik
 
 ```
 cp .env.example .env && \
-cp .cloudflare-api.key.example .cloudflare-api.key && \
-cp .htpasswd.example .htpasswd && \
-cp stable_traefik.toml.example stable_traefik.toml
+cp .cloudflare-api.key.example .cloudflare-api.key
 ```
 2. Set variables in .env file
 
@@ -35,10 +33,10 @@ cp stable_traefik.toml.example stable_traefik.toml
 Notes: 
 
 For Traefik Help: 
-`docker run --rm traefik:1.7-alpine --help | less` 
+`docker run --rm traefik:2.4 --help | less` 
 
-Providers
-`https://docs.traefik.io/v1.7/configuration/acme/#provider`
+Providers for Traefik 2.4
+`https://doc.traefik.io/traefik/https/acme/#providers`
 
 #### Other providers example: 
 In the .env file change the TRAEFIK_DNS_PROVIDER variable: 

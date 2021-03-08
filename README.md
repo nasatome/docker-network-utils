@@ -22,7 +22,7 @@ Here are instructions for obtaining a copy of the project up and running on your
 
    
 
-### Installing
+### Installing Ecosystem
 
 This is not software that is installed as such, but rather a series of "modules" that will help you build your own infrastructure.
 
@@ -33,8 +33,11 @@ First of all, you need to install a load balancer, the one I recommend is Traefi
 You can use the following modules that can be added to this load balancer
 
 `https://github.com/nasatome/dockapress`  It's a project to run WordPress with docker
+
 `https://github.com/nasatome/dockpy` is a project to run Docker Projects with Python, (Django, Flask)
+
 `https://github.com/nasatome/doockla` Docker + (PHP) Joomla
+
 `https://github.com/nasatome/dockavel` Docker + (PHP) Laravel
 
 
@@ -55,9 +58,9 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## Authors
 
-* **[nasatome](https://github.com/PurpleBooth)** - *Initial work* 
+* **[nasatome](https://github.com/nasatome)** - *Initial work* 
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/nasatome/docker-network-utils/contributors) who participated in this project.
 
 ## License
 

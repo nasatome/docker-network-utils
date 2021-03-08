@@ -20,7 +20,7 @@ cd traefik
 
 ```
 cp .env.example .env && \
-cp .cloudflare-api.key.example .cloudflare-api.key`
+cp .cloudflare-api.key.example .cloudflare-api.key
 ```
 2. Set variables in .env file
 

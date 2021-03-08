@@ -2,19 +2,19 @@ version: '3'
 
 services:
   portainer:
-      image: portainer/portainer
-      command: "--admin-password ${PORTAINER_ADMIN}"
-      networks:
-        - proxy
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
-        - ./portainer-data:/data
-      labels:
-        - 'traefik.backend=portainer'
-        - 'traefik.port=9000'
-        - 'traefik.frontend.rule=Host:${FRONTEND_RULE_PTR}'
-        - 'traefik.enable=true'
-      restart: always
+    image: portainer/portainer-ce:latest
+    command: "--admin-password ${PORTAINER_ADMIN_PASSWORD}"
+    networks:
+      - proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer-data:/data
+    labels:
+      - "traefik.http.routers.portainer.entrypoints=web,websecure"
+      - 'traefik.http.routers.portainer.rule=Host(`${FRONTEND_RULE_PTR}`)'
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - 'traefik.enable=true'
+    restart: always
 
 
 networks:

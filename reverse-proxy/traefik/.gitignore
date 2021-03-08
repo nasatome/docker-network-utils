@@ -1,7 +1,3 @@
 acme/acme.json
 .cloudflare-api.key
 .env
-.htpasswd
-traefik.toml
-devel_traefik.toml
-traefik_no_https.toml

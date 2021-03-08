@@ -24,7 +24,7 @@ cp .cloudflare-api.key.example .cloudflare-api.key
 ```
 2. Set variables in .env file
 
-3. Change Password in .htpasswd file; You can use this command:
+3. Change Password var TRAEFIK_BASIC_AUTH_USERS in .env file; You can use this command:
 
 `docker run --rm httpd:2.4-alpine htpasswd -nbB CHANGE_USER CHANGE_PASSWORD; history -d $(history | tail -1 | awk '{print $1}') ; printf "\n\n"`
 

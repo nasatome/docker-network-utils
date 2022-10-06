@@ -30,7 +30,7 @@ services:
       - "${TRAEFIK_HOST_HTTP_PORT}:80"
       - "${TRAEFIK_HOST_HTTPS_PORT}:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DOCKER_SOCK_PATH}:/var/run/docker.sock:ro
       - ./acme:/etc/traefik/acme
     env_file:
       - ./.${TRAEFIK_DNS_PROVIDER}-api.key

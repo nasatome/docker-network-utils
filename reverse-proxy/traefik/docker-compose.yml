@@ -16,6 +16,7 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entryPoints.websecure.address=:443"
+      - "--entryPoints.web.forwardedHeaders.trustedIPs=${CLOUDFLARE_IPS_V4}"
       - "--entrypoints.websecure.http.tls.certResolver=${TRAEFIK_CERT_RESOLVER}"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge=true"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.email=${ACME_EMAIL}"

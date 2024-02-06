@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   traefik:
-    image: library/traefik:2.9
+    image: library/traefik:2.11
     restart: always
     command:
       - "--api=${TRAEFIK_API}"

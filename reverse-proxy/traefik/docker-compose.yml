@@ -1,28 +1,39 @@
-version: '3.8'
-
 services:
   traefik:
-    image: library/traefik:2.11
+    image: traefik:v3.6.5
     restart: always
     command:
-      - "--api=${TRAEFIK_API}"
-      - "--api.dashboard=${TRAEFIK_API_DASHBOARD}"
+      # Load static configuration (includes Cloudflare trusted IPs)
+      - "--configFile=/etc/traefik/traefik.yml"
+
+      - "--log.level=${TRAEFIK_LOG_LEVEL}"
       - "--ping=${TRAEFIK_PING}"
+
+      # v3 migration: keep v2 rules syntax for backwards compatibility
+      - "--core.defaultRuleSyntax=v2"
+
+      # Docker provider
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.watch=true"
       - "--providers.docker.network=${TRAEFIK_DEFAULT_DOCKER_NETWORK}"
-      - "--entryPoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entryPoints.websecure.address=:443"
+
+      # Entrypoints (TLS config - entrypoint addresses are in traefik.yml)
       - "--entrypoints.websecure.http.tls.certResolver=${TRAEFIK_CERT_RESOLVER}"
+
+      # ACME DNS challenge (Cloudflare) - Traefik v3 syntax
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge=true"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.provider=${TRAEFIK_DNS_PROVIDER}"
-      - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.delaybeforecheck=${TRAEFIK_DNS_DELAY_BEFORE_CHECK}"
+      # v3 propagation settings (replaces deprecated delaybeforecheck)
+      - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.propagation.delaybeforechecks=${TRAEFIK_DNS_DELAY_BEFORE_CHECK}"
+      - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.propagation.disableanschecks=true"
+      - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.storage=/etc/traefik/acme/acme.json"
-      - "--log.level=${TRAEFIK_LOG_LEVEL}"
+
+      # API/Dashboard (secured via labels below)
+      - "--api=${TRAEFIK_API}"
+      - "--api.dashboard=${TRAEFIK_API_DASHBOARD}"
 
     networks:
       - traefik
@@ -32,18 +43,36 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:/var/run/docker.sock:ro
       - ./acme:/etc/traefik/acme
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
     env_file:
       - ./.${TRAEFIK_DNS_PROVIDER}-api.key
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls=web"
-      - "traefik.http.routers.api.rule=Host(`${TRAEFIK_FRONTEND_RULE}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-      - "traefik.http.routers.api.service=api@internal"
-      - "traefik.http.routers.api.middlewares=api-auth"
-      - "traefik.http.middlewares.api-auth.basicauth.users=${TRAEFIK_BASIC_AUTH_USERS}"
+      # Dashboard secure mode: route to api@internal with basicAuth
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_FRONTEND_RULE}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH_USERS}"
+
+  # ==========================================================================
+  # Ofelia - Docker Job Scheduler
+  # Updates Cloudflare IP ranges in traefik.yml weekly
+  # @see https://github.com/mcuadros/ofelia
+  # ==========================================================================
+  ofelia:
+    image: mcuadros/ofelia:latest
+    restart: always
+    depends_on:
+      - traefik
+    environment:
+      - TZ=America/Mexico_City
+    volumes:
+      - ${DOCKER_SOCK_PATH}:/var/run/docker.sock:ro
+      - ./ofelia.ini:/etc/ofelia/config.ini:ro
+    command: daemon --config=/etc/ofelia/config.ini
 
 networks:
   traefik:
     driver: bridge
-

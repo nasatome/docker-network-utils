@@ -1,3 +1,4 @@
 acme/acme.json
 .cloudflare-api.key
+.discord-webhook
 .env

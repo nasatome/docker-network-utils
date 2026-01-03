@@ -3,14 +3,11 @@ services:
     image: traefik:v3.6.5
     restart: always
     command:
-      # Load static configuration (includes Cloudflare trusted IPs)
-      - "--configFile=/etc/traefik/traefik.yml"
-
+      # Logging
       - "--log.level=${TRAEFIK_LOG_LEVEL}"
-      - "--ping=${TRAEFIK_PING}"
 
-      # v3 migration: keep v2 rules syntax for backwards compatibility
-      - "--core.defaultRuleSyntax=v2"
+      # Ping endpoint for health checks
+      - "--ping=${TRAEFIK_PING}"
 
       # Docker provider
       - "--providers.docker=true"
@@ -18,14 +15,20 @@ services:
       - "--providers.docker.watch=true"
       - "--providers.docker.network=${TRAEFIK_DEFAULT_DOCKER_NETWORK}"
 
-      # Entrypoints (TLS config - entrypoint addresses are in traefik.yml)
-      - "--entrypoints.websecure.http.tls.certResolver=${TRAEFIK_CERT_RESOLVER}"
+      # EntryPoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "--entrypoints.websecure.forwardedheaders.insecure=false"
+      - "--entrypoints.websecure.forwardedheaders.trustedips=${CLOUDFLARE_IPS}"
 
       # ACME DNS challenge (Cloudflare) - Traefik v3 syntax
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge=true"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.provider=${TRAEFIK_DNS_PROVIDER}"
-      # v3 propagation settings (replaces deprecated delaybeforecheck)
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.propagation.delaybeforechecks=${TRAEFIK_DNS_DELAY_BEFORE_CHECK}"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.propagation.disableanschecks=true"
       - "--certificatesresolvers.${TRAEFIK_CERT_RESOLVER}.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
@@ -43,7 +46,6 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:/var/run/docker.sock:ro
       - ./acme:/etc/traefik/acme
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
     env_file:
       - ./.${TRAEFIK_DNS_PROVIDER}-api.key
     labels:
@@ -58,7 +60,7 @@ services:
 
   # ==========================================================================
   # Ofelia - Docker Job Scheduler
-  # Updates Cloudflare IP ranges in traefik.yml weekly
+  # Updates Cloudflare IP ranges weekly
   # @see https://github.com/mcuadros/ofelia
   # ==========================================================================
   ofelia:

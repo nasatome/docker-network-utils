@@ -54,6 +54,11 @@ services:
       - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_FRONTEND_RULE}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls=true"
+      # Traefik v3 fix: explicit certresolver per-router required, entrypoint
+      # default cert resolver does NOT propagate to routers with `tls=true`
+      # alone (router gets `tls={}` empty config, which serves default cert
+      # instead of triggering ACME order). Discovered debugging fresh deploy.
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH_USERS}"

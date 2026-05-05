@@ -1,0 +1,9 @@
+# images.txt - Allowlist of images to scan (one per line)
+#
+# - Lines starting with # are ignored
+# - If all lines are commented/empty, scanner auto-discovers from running containers
+#
+# Examples:
+# traefik:v3.6.15
+# postgres:17-alpine
+# redis:8-alpine

@@ -1,0 +1,43 @@
+services:
+  trivy-scanner:
+    image: trivy-scanner:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trivy-scanner-runner
+    restart: always
+    command: ["sleep", "infinity"]
+    environment:
+      - TZ=${TZ:-America/Mexico_City}
+      # Optional: override hostname shown in Discord embed.
+      # Useful if /etc/hostname is generic (e.g., AWS EC2 instance ID).
+      # - SCANNER_HOST=prod-aws-ec2
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/hostname:/etc/host-hostname:ro
+      - trivy-cache:/root/.cache/
+      - ./scripts:/scripts:ro
+      - ./images.txt:/etc/trivy-scanner/images.txt:ro
+      # Fail-fast if .discord-webhook is missing (don't auto-create as a directory)
+      - type: bind
+        source: ./.discord-webhook
+        target: /etc/discord-webhook
+        read_only: true
+        bind:
+          create_host_path: false
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    restart: always
+    depends_on:
+      - trivy-scanner
+    environment:
+      - TZ=${TZ:-America/Mexico_City}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ofelia.ini:/etc/ofelia/config.ini:ro
+    command: daemon --config=/etc/ofelia/config.ini
+
+volumes:
+  trivy-cache:
+    external: true

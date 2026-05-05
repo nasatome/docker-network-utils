@@ -1,11 +1,8 @@
-version: '3'
 
 services:
   portainer:
     image: portainer/portainer-ce:latest
     command: "--admin-password ${PORTAINER_ADMIN_PASSWORD}"
-    networks:
-      - proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./portainer-data:/data
@@ -16,9 +13,7 @@ services:
       - 'traefik.enable=true'
     restart: always
 
-
 networks:
-  proxy:
-    external:
-      name: ${PROXY_NAME}
-
+  default:
+    external: true
+    name: ${PROXY_NETWORK_NAME}

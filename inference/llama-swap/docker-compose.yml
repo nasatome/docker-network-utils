@@ -1,0 +1,41 @@
+services:
+  llama-swap:
+    image: ghcr.io/mostlygeek/llama-swap:unified-cuda
+    container_name: llama-swap
+    restart: always
+    environment:
+      - TZ=${TZ:-UTC}
+    volumes:
+      # Catálogo de modelos. Por defecto se monta la plantilla del repo, que
+      # trae unos pocos modelos de ejemplo. Apunta LLAMA_SWAP_CONFIG a tu propio
+      # archivo (fuera del repo) para usar tu catálogo real. Ver README.md.
+      - ${LLAMA_SWAP_CONFIG:-./config/llama-swap.yaml.example}:/etc/llama-swap/config/config.yaml:ro
+      # Directorio raíz de modelos GGUF. Obligatorio.
+      - ${MODELS_ROOT}:/models:ro
+      # Opcional: segundo directorio en un disco más rápido, para modelos cuyo
+      # cold start te importe. Solo afecta al tiempo de carga, no a la
+      # velocidad de generación.
+      - ${MODELS_ROOT_FAST:-./config}:/models-fast:ro
+      # Opcional: modelos que viven fuera del árbol de MODELS_ROOT.
+      # Si la variable no se define, se monta ./config como placeholder inocuo.
+      - ${EXTRA_MODELS_ROOT:-./config}:/extra-models:ro
+    ports:
+      - "127.0.0.1:${HOST_PORT}:8080"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+networks:
+  default:
+    external: true
+    name: ${LLM_NETWORK_NAME}

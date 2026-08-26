@@ -1,0 +1,159 @@
+# =============================================================================
+# llama-swap — PLANTILLA de configuración
+# =============================================================================
+#
+# Este archivo es el config por defecto del repositorio: una PLANTILLA que
+# demuestra los patrones disponibles. NO es un catálogo de modelos.
+#
+# Tu catálogo real vive FUERA de este repositorio. Lo seleccionas con la
+# variable LLAMA_SWAP_CONFIG en tu .env:
+#
+#   LLAMA_SWAP_CONFIG=/home/TU-USUARIO/.config/llama-swap/catalog.yaml
+#
+# Si no la defines, el compose monta este ejemplo y el servicio arranca con los
+# tres modelos de abajo. Ver README.md, sección "Tu catálogo vive fuera".
+#
+# Referencia llama-swap:  https://github.com/mostlygeek/llama-swap
+# Flags de llama-server:  https://github.com/ggml-org/llama.cpp/tree/master/tools/server
+# =============================================================================
+
+# Segundos que llama-swap espera a que un modelo recién arrancado responda en
+# checkEndpoint. Un cold start lee el GGUF entero desde disco, así que el valor
+# depende del tamaño del modelo y de la velocidad del disco donde vive: en NVMe
+# con modelos pequeños 120 sobra; en disco mecánico con modelos de decenas de GB
+# hace falta bastante más. Si ves timeouts al primer request, sube esto.
+healthCheckTimeout: 600
+
+logLevel: info
+
+# Puerto base desde el que llama-swap asigna ${PORT} a cada llama-server hijo.
+# Solo se usa dentro del container; no necesita exponerse al host.
+startPort: 5800
+
+models:
+
+  # ===========================================================================
+  # PATRÓN 1 — Modelo de texto
+  # ===========================================================================
+  # La forma mínima completa. Toda entrada necesita las cinco claves de abajo:
+  # omitir `proxy` es el error más común y hace que llama-swap no sepa a dónde
+  # enrutar el request una vez arrancado el proceso.
+  #
+  # Las rutas son relativas a /models, que es donde el compose monta MODELS_ROOT.
+  # Ajusta los nombres de carpeta y archivo a los GGUF que tengas descargados.
+  "qwen3.5-4b":
+    cmd: |
+      /usr/local/bin/llama-server --port ${PORT} --host 127.0.0.1
+      -m /models/qwen3.5-4b/Qwen3.5-4B-Q4_K_M.gguf
+      -ngl 99 --parallel 1 -t 8 -c 32768
+      --cache-type-k q4_0 --cache-type-v q4_0
+      --jinja
+    # A dónde reenvía llama-swap los requests de este modelo. ${PORT} lo asigna
+    # llama-swap a partir de startPort. Obligatorio.
+    proxy: "http://127.0.0.1:${PORT}"
+    # Endpoint que se sondea hasta que el modelo está listo (o hasta agotar
+    # healthCheckTimeout).
+    checkEndpoint: "/health"
+    # Segundos de inactividad antes de descargar el modelo y liberar la VRAM.
+    # Es el motivo de existir de llama-swap: 1800 = 30 min.
+    ttl: 1800
+    env:
+      # Fija a qué GPU se ata el proceso. Útil para repartir modelos entre
+      # varias tarjetas, o para forzar CPU con un valor vacío.
+      - "CUDA_VISIBLE_DEVICES=0"
+
+  # Cómo leer los flags de `cmd`, porque son los que vas a querer tocar:
+  #
+  #   -ngl N          Capas del modelo que se suben a la GPU. 99 = todas las que
+  #                   quepan; 0 = CPU pura. Si el modelo no cabe entero, bajarlo
+  #                   deja parte en RAM: funciona, pero mucho más lento.
+  #   -c N            Tamaño del contexto. Después del propio modelo, es la
+  #                   palanca principal de VRAM: el KV cache crece de forma
+  #                   lineal con este número.
+  #   --cache-type-k  Cuantiza el KV cache (q8_0, q4_0). q4_0 recorta el KV a
+  #   --cache-type-v  ~1/4 frente a f16 y suele ser la diferencia entre que un
+  #                   contexto largo quepa o no. Cuidado: en modelos con
+  #                   head_size < 128 (típico en los de ~1B) puede degradar la
+  #                   calidad; en ese caso déjalo sin cuantizar.
+  #   --parallel 1    Un solo slot de decodificación. llama-swap sirve un modelo
+  #                   a la vez, así que subirlo solo reparte la misma VRAM entre
+  #                   más slots y acorta el contexto útil de cada uno.
+  #   -t N            Hilos de CPU. Como referencia, tus núcleos físicos.
+  #   --jinja         Usa la plantilla de chat embebida en el GGUF. Necesario
+  #                   para que los modelos con formato propio respondan bien.
+
+  # ===========================================================================
+  # PATRÓN 2 — Modelo multimodal (visión)
+  # ===========================================================================
+  # Igual que el anterior, más `--mmproj`: el proyector multimodal que convierte
+  # la imagen en embeddings que el modelo entiende. Es un archivo aparte del
+  # GGUF principal y tiene que corresponder al mismo modelo; mezclarlos falla.
+  #
+  # El mmproj ocupa VRAM propia (de cientos de MB a un par de GB según el
+  # modelo), así que un multimodal siempre pide más memoria que su gemelo de
+  # texto puro del mismo tamaño.
+  "glm-ocr":
+    cmd: |
+      /usr/local/bin/llama-server --port ${PORT} --host 127.0.0.1
+      -m /models/glm-ocr/GLM-OCR-Q8_0.gguf
+      --mmproj /models/glm-ocr/mmproj-GLM-OCR-Q8_0.gguf
+      -ngl 99 --parallel 1 -t 8 -c 16384
+    proxy: "http://127.0.0.1:${PORT}"
+    checkEndpoint: "/health"
+    ttl: 1800
+    env:
+      - "CUDA_VISIBLE_DEVICES=0"
+
+  # Un mismo GGUF puede aparecer dos veces con IDs distintos, una con --mmproj y
+  # otra sin él, si quieres alternar entre modo visión y modo texto sin pagar la
+  # VRAM del proyector cuando no la necesitas. Son entradas independientes: cada
+  # una arranca su propio proceso y tiene su propio ttl.
+
+  # ===========================================================================
+  # PATRÓN 3 — MoE con descarga de expertos a CPU
+  # ===========================================================================
+  # Para modelos Mixture-of-Experts que NO caben enteros en tu GPU. En un MoE
+  # los expertos son la mayor parte de los pesos pero solo se activa una
+  # fracción por token, así que dejarlos en RAM cuesta menos velocidad de lo que
+  # costaría con un modelo denso equivalente. Es lo que permite correr un modelo
+  # de varias decenas de miles de millones de parámetros en una GPU de consumo.
+  #
+  #   -ncmoe N   Número de capas cuyos expertos se quedan en CPU. Subirlo libera
+  #              VRAM y baja los tokens/s; bajarlo hace lo contrario hasta que
+  #              OOM.
+  #
+  # ATENCIÓN: N depende por completo de TU hardware — VRAM de la tarjeta,
+  # cuantización del GGUF y el -c que elijas. No hay un valor bueno que se pueda
+  # publicar aquí. El método es empírico: empieza alto (conservador), baja de
+  # uno en uno hasta que el modelo falle al cargar, y vuelve al último que
+  # aguantó con margen. Repite si cambias -c o la cuantización.
+  #
+  # Esta entrada viene comentada porque sus valores no son utilizables tal cual.
+  # Descoméntala y calíbrala contra tu tarjeta.
+  #
+  # "moe-offload-example":
+  #   cmd: |
+  #     /usr/local/bin/llama-server --port ${PORT} --host 127.0.0.1
+  #     -m /models/mi-moe/mi-modelo-MoE-Q4_K_M.gguf
+  #     -ngl 999 -ncmoe 99 -fit off --parallel 1 -t 8 -c 32768
+  #     --cache-type-k q4_0 --cache-type-v q4_0
+  #     --jinja
+  #   proxy: "http://127.0.0.1:${PORT}"
+  #   checkEndpoint: "/health"
+  #   ttl: 1800
+  #   env:
+  #     - "CUDA_VISIBLE_DEVICES=0"
+
+  # ===========================================================================
+  # Montajes disponibles dentro del container
+  # ===========================================================================
+  #
+  #   /models        MODELS_ROOT        obligatorio
+  #   /models-fast   MODELS_ROOT_FAST   opcional, para un disco más rápido
+  #   /extra-models  EXTRA_MODELS_ROOT  opcional, para modelos fuera del árbol
+  #                                     principal
+  #
+  # Los tres son read-only. Los dos opcionales caen a un placeholder inocuo si
+  # no defines la variable, así que puedes ignorarlos si te basta con uno.
+  # Separar por disco solo cambia el tiempo de cold start (el modelo se lee una
+  # vez al cargar); no afecta a la velocidad de generación.

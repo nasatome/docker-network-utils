@@ -1,1 +1,24 @@
 .idea
+
+# Valores reales de entorno. Los .env.example SI se versionan.
+.env
+
+# Notas locales para agentes de IA. AGENTS.md si se versiona; este no.
+CLAUDE.local.md
+
+# ---------------------------------------------------------------------------
+# Catálogos de modelos locales (inference/llama-swap)
+# ---------------------------------------------------------------------------
+# Este repositorio es público y genérico: publica el despliegue del servicio,
+# no el inventario de modelos de una máquina concreta. El catálogo real vive
+# fuera del repo y se selecciona con LLAMA_SWAP_CONFIG.
+# Solo config/llama-swap.yaml.example se versiona.
+inference/llama-swap/config/llama-swap.yaml
+**/config/*.local.yaml
+
+# ---------------------------------------------------------------------------
+# Copias de seguridad generadas al editar configs
+# ---------------------------------------------------------------------------
+*.bak
+*.bak.*
+*.bak-*

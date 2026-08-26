@@ -12,12 +12,15 @@ services:
       - ${LLAMA_SWAP_CONFIG:-./config/llama-swap.yaml.example}:/etc/llama-swap/config/config.yaml:ro
       # Directorio raíz de modelos GGUF. Obligatorio.
       - ${MODELS_ROOT}:/models:ro
-      # Opcional: segundo directorio en un disco más rápido, para modelos cuyo
-      # cold start te importe. Solo afecta al tiempo de carga, no a la
-      # velocidad de generación.
+      # Montajes opcionales adicionales, para repartir los pesos entre varios
+      # discos. Un bind mount no cuesta nada en runtime, así que añadir más es
+      # gratis: copia una línea, elige un punto de montaje y declara la variable.
+      # Cada uno cae a ./config como placeholder inocuo si no lo defines.
+      # Solo cambian el tiempo de cold start, nunca la velocidad de generación.
       - ${MODELS_ROOT_FAST:-./config}:/models-fast:ro
-      # Opcional: modelos que viven fuera del árbol de MODELS_ROOT.
-      # Si la variable no se define, se monta ./config como placeholder inocuo.
+      - ${MODELS_ROOT_NVME:-./config}:/models-nvme:ro
+      # Modelos que viven fuera del árbol de MODELS_ROOT, por ejemplo dentro
+      # del directorio de otro proyecto.
       - ${EXTRA_MODELS_ROOT:-./config}:/extra-models:ro
     ports:
       - "127.0.0.1:${HOST_PORT}:8080"

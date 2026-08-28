@@ -6,6 +6,28 @@ services:
       # Logging
       - "--log.level=${TRAEFIK_LOG_LEVEL}"
 
+      # Access log. Off by default: it is high volume and where it should go
+      # depends entirely on the host, so opting in is the deployer's decision.
+      #
+      # filePath is set unconditionally, and that is deliberate. With the access
+      # log enabled and no filePath, Traefik writes it to stdout — which means
+      # it lands in whatever log driver the container uses. On a host shipping
+      # container output to a paid log service that silently multiplies the
+      # bill. Verified against traefik:v3.7.11: --accesslog=false disables the
+      # access log even with filePath set, so the flag pair is safe to leave in
+      # place permanently.
+      #
+      # Traefik has NO built-in rotation for the access log — maxSize, maxAge
+      # and maxBackups exist only for --log, not --accesslog. Rotation is the
+      # host's job. Traefik closes and reopens its log files on USR1, so an
+      # external rotator must rename the file and then signal the container;
+      # truncate-in-place loses whatever is written during the copy window.
+      # Verified with traefik:v3.7.11: after a rename the process keeps writing
+      # to the old inode until USR1 arrives, and the signal does not restart it.
+      - "--accesslog=${TRAEFIK_ACCESS_LOG:-false}"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=${TRAEFIK_ACCESS_LOG_FORMAT:-json}"
+
       # Ping endpoint for health checks
       - "--ping=${TRAEFIK_PING}"
 
@@ -46,6 +68,12 @@ services:
     volumes:
       - ${DOCKER_SOCK_PATH}:/var/run/docker.sock:ro
       - ./acme:/etc/traefik/acme
+      # The DIRECTORY is mounted, never the log file itself. A single-file bind
+      # mount binds the inode: when the rotator renames the file and creates a
+      # new one, the host gets a fresh inode but the container keeps writing to
+      # the old one, invisibly, forever. Mounting the directory makes rename and
+      # create immediately visible on both sides.
+      - ${TRAEFIK_LOG_DIR:-./logs}:/var/log/traefik
     env_file:
       - ./.${TRAEFIK_DNS_PROVIDER}-api.key
     labels:

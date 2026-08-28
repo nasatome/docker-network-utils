@@ -67,13 +67,34 @@ services:
       - "${TRAEFIK_HOST_HTTPS_PORT}:443"
     volumes:
       - ${DOCKER_SOCK_PATH}:/var/run/docker.sock:ro
-      - ./acme:/etc/traefik/acme
+
+      # create_host_path: false on both persistent mounts below. Docker's default
+      # is to silently create a missing bind source, which is the wrong default
+      # for state that must already exist. On a host where these paths live on a
+      # separate disk, a boot where that disk fails to mount would have Docker
+      # invent empty directories on the root filesystem and Traefik happily use
+      # them: certificates reissued from scratch against the CA's rate limits,
+      # access log written somewhere nobody will look, and the real data hidden
+      # under the mount once it appears. Refusing to start is the safe failure —
+      # loud, immediate, and it cannot corrupt anything.
+      #
+      # Both directories are tracked with a .gitkeep so a fresh clone still runs.
+      - type: bind
+        source: ./acme
+        target: /etc/traefik/acme
+        bind:
+          create_host_path: false
+
       # The DIRECTORY is mounted, never the log file itself. A single-file bind
       # mount binds the inode: when the rotator renames the file and creates a
       # new one, the host gets a fresh inode but the container keeps writing to
       # the old one, invisibly, forever. Mounting the directory makes rename and
       # create immediately visible on both sides.
-      - ${TRAEFIK_LOG_DIR:-./logs}:/var/log/traefik
+      - type: bind
+        source: ${TRAEFIK_LOG_DIR:-./logs}
+        target: /var/log/traefik
+        bind:
+          create_host_path: false
     env_file:
       - ./.${TRAEFIK_DNS_PROVIDER}-api.key
     labels:

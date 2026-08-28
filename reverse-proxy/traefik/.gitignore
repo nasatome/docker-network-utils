@@ -7,4 +7,8 @@ acme/acme.json
 # full request URLs — personal data, and sometimes tokens in query strings — so
 # they must never reach a public repository. Same rule as the model catalogs:
 # the repo ships the mechanism, the data stays outside.
-logs/
+#
+# The directory itself IS tracked, via .gitkeep, because the bind mount refuses
+# to create it (create_host_path: false) and a fresh clone must still start.
+logs/*
+!logs/.gitkeep

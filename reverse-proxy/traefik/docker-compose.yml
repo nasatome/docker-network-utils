@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.7.11
+    image: traefik:v3.7.13
     restart: always
     command:
       # Logging

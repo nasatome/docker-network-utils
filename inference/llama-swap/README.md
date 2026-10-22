@@ -100,6 +100,54 @@ curl http://llama-swap:8080/v1/chat/completions -H "Content-Type: application/js
 
 Desde un proyecto no dockerizado, lo mismo contra `http://127.0.0.1:8222`.
 
+## Modelos de razonamiento: apagar el pensamiento para tareas mecánicas
+
+Vale para cualquier catálogo, y es contraintuitivo lo suficiente como para
+documentarlo.
+
+Muchos modelos recientes razonan por defecto: emiten una cadena de pensamiento
+antes de responder. Esos tokens **se pagan** aunque el cliente sólo lea el
+`content`. La mayoría permite apagarlo por petición:
+
+```jsonc
+{"model": "...", "messages": [...],
+ "chat_template_kwargs": {"enable_thinking": false}}
+```
+
+**Para clasificar, extraer o reformatear, apagarlo suele MEJORAR el resultado, no
+sólo abaratarlo.** Medido sobre una tarea de clasificación con seis modelos:
+
+- Con un prompt que sólo listaba las categorías, apagar el razonamiento costaba
+  aciertos. **Con un prompt que define qué significa cada categoría, apagarlo los
+  sube** — y cuesta ~6× menos tokens y ~5× menos tiempo. El razonamiento estaba
+  compensando un prompt pobre. **Invertir en las definiciones rinde más que
+  encender el pensamiento.**
+- **La varianza entre corridas es del razonamiento, no del modelo.** Con
+  pensamiento, el mismo modelo variaba ±49% en tokens entre dos corridas — el
+  modelo decide cuánto pensar cada vez. Apagado, cuatro corridas dieron el mismo
+  resultado con ±6% de tokens. Si un ranking necesita promediar cinco corridas,
+  vale la pena preguntarse si conviene quitar la fuente de varianza en vez de
+  medirla.
+- **«Razonar poco» puede ser peor que no razonar.** Un modelo con esfuerzo bajo
+  acertó *menos* que el mismo modelo apagado, gastando 5× más tokens.
+
+### Tres avisos prácticos
+
+**No todos obedecen.** Hay plantillas de chat que inyectan el bloque de
+pensamiento sin interruptor: mandar `enable_thinking: false` no hace nada y no
+avisa. Compruébalo mirando `completion_tokens`, no la documentación.
+
+**`finish_reason: length` no es una respuesta.** Un modelo de razonamiento que se
+queda sin presupuesto devuelve `content` **vacío y sin error**: gastó todo el
+cupo pensando. Desde fuera es indistinguible de una respuesta legítimamente
+vacía. Trátalo siempre como fallo ruidoso.
+
+**Un benchmark de código no predice el resto.** Cinco modelos que resolvían igual
+de bien un ejercicio de programación se separaron mucho en una tarea de
+clasificación — y el que había quedado descartado *por lento* resultó el mejor y
+el más rápido en cuanto se le apagó el pensamiento. Mide la tarea que vas a
+correr.
+
 ## Modelo de confianza
 
 **llama-swap no tiene autenticación.** Cualquier container conectado a la red

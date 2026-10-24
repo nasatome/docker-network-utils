@@ -27,6 +27,14 @@ services:
       - "--accesslog=${TRAEFIK_ACCESS_LOG:-false}"
       - "--accesslog.filepath=/var/log/traefik/access.log"
       - "--accesslog.format=${TRAEFIK_ACCESS_LOG_FORMAT:-json}"
+      # Behind a proxy or CDN, ClientHost is the proxy, never the visitor. The
+      # visitor IP travels in a request header, and the access log drops all
+      # request headers by default. These two flags keep exactly that one
+      # header and nothing else (cookies and Authorization stay out of the
+      # log). json format only: it shows up as request_<Header-Name>.
+      # Verified against traefik:v3.7.16.
+      - "--accesslog.fields.headers.defaultmode=drop"
+      - "--accesslog.fields.headers.names.${TRAEFIK_ACCESS_LOG_CLIENT_IP_HEADER:-X-Forwarded-For}=keep"
 
       # Ping endpoint for health checks
       - "--ping=${TRAEFIK_PING}"

@@ -12,12 +12,16 @@ services:
       # Optional: override hostname shown in Discord embed.
       # Useful if /etc/hostname is generic (e.g., AWS EC2 instance ID).
       # - SCANNER_HOST=prod-aws-ec2
+      # Machine-readable report of each scan (see scripts/scan.sh), on the host
+      # in ./reports. Remove both lines to keep Discord only.
+      - REPORT_DIR=/reports
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/hostname:/etc/host-hostname:ro
       - trivy-cache:/root/.cache/
       - ./scripts:/scripts:ro
       - ./images.txt:/etc/trivy-scanner/images.txt:ro
+      - ./reports:/reports
       # Fail-fast if .discord-webhook is missing (don't auto-create as a directory)
       - type: bind
         source: ./.discord-webhook

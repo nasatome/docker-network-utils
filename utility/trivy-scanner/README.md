@@ -9,6 +9,7 @@ Daily vulnerability scan of running Docker images with Discord notifications.
 - Posts a Discord embed with findings when there is something to report
 - Sends a weekly heartbeat (Mondays) even when no findings, so you know the scanner is alive
 - Auto-discovers images from running containers, or uses an explicit allowlist
+- Writes a machine-readable report of each scan to `./reports` (optional), so another tool can alert on new findings only
 
 ## Files
 
@@ -19,6 +20,7 @@ Daily vulnerability scan of running Docker images with Discord notifications.
 | `scripts/scan.sh` | Scan + notification logic |
 | `images.txt` | Optional allowlist (one image per line) |
 | `.discord-webhook` | Webhook URL (gitignored) |
+| `reports/` | Report of the last scan, if `REPORT_DIR` is set (gitignored) |
 
 ## Setup
 
@@ -50,4 +52,5 @@ The runner container (`trivy-scanner-runner`) stays up sleeping; Ofelia uses `do
 - **Severity threshold**: edit `--severity CRITICAL,HIGH` in `scripts/scan.sh`.
 - **Heartbeat day**: edit `HEARTBEAT_DOW` in `scripts/scan.sh` (1=Mon, 7=Sun). Set to `0` to disable.
 - **Trivy version**: bump `FROM aquasec/trivy:X.Y.Z` in `Dockerfile`, then `docker compose up -d --build trivy-scanner`.
+- **Report**: `REPORT_DIR=/reports` in `docker-compose.yml` writes `critical.tsv` (one `image<TAB>vulnerability-id<TAB>package` line per CRITICAL finding; an image Docker reports only by ID is named by its repository) and `last-scan.json` (`finished_at`, `images`, `failed`, `critical`, `high`, `db_updated_at`, `critical_sha256`). A reader should check `critical_sha256` against `critical.tsv`, and treat `failed > 0` or an old `db_updated_at` as a degraded scan. Remove `REPORT_DIR` and the `./reports` mount to disable it.
 - **Hostname in Discord embed**: by default reads `/etc/hostname` from the host. Override per-host by uncommenting `SCANNER_HOST=...` in `docker-compose.yml`.
